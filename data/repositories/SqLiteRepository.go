@@ -2,14 +2,15 @@ package repositories
 
 import (
 	"fmt"
+	"math/rand"
 
 	"object-shooter.com/data"
 )
 
-type MySqlRepositiry struct {
+type MySqlRepositiry[T any] struct {
 }
 
-func (r *MySqlRepositiry) SetData(tableName, jData string) error {
+func (r MySqlRepositiry[T]) SetData(tableName string, jData T) error {
 	if err := createTable(tableName); err != nil {
 		return nil
 	}
@@ -27,7 +28,7 @@ func (r *MySqlRepositiry) SetData(tableName, jData string) error {
 	return nil
 }
 
-func (r *MySqlRepositiry) SetChankData(tableName string, jData []string) error {
+func (r MySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
 	if err := createTable(tableName); err != nil {
 		return err
 	}
@@ -57,8 +58,28 @@ func (r *MySqlRepositiry) SetChankData(tableName string, jData []string) error {
 	return nil
 }
 
-func (r *MySqlRepositiry) GetData(tableName string, take, skip int) string {
-	return ""
+func (r MySqlRepositiry[T]) GetData(tableName string, isRandom bool, take, skip int64) ([]T, error) {
+	if isRandom {
+		take = rand.Int63n(50)
+		skip = rand.Int63n(50)
+	}
+
+	rows, err := data.DbContext.Db.Query(fmt.Sprintf(data.GetJson, tableName), skip, take)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var jsons []T
+	for rows.Next() {
+		var data T
+		err := rows.Scan(&data)
+		if err != nil {
+			return nil, err
+		}
+		jsons = append(jsons, data)
+	}
+
+	return jsons, nil
 }
 
 func createTable(tableName string) error {

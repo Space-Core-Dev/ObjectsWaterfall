@@ -17,7 +17,8 @@ var DbContext DataContext
 func InitDbConnection() error {
 	var err error
 	driver := os.Getenv("DB_DRIVER")
-	db, err := sql.Open(driver, "objs.db")
+	connectionString := os.Getenv("DB_CONNECTION_STRING")
+	db, err := sql.Open(driver, connectionString)
 	if err != nil {
 		return err
 	}

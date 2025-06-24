@@ -36,7 +36,7 @@ func (s SeedProcessor) ProcessJson(areChanks bool, inChank int) error {
 
 func insertToDatabase(jArray *models.JArray, tableName string, howMuch int) error {
 	errCh := make(chan error)
-	repo, err := repositories.NewRepository()
+	repo, err := repositories.NewRepository[string]()
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func insertChanksToDatabase(jArray *models.JArray, tableName string, howMuch, in
 	errCh := make(chan error, 10)
 	var chank []string
 	var wg sync.WaitGroup
-	repo, err := repositories.NewRepository()
+	repo, err := repositories.NewRepository[string]()
 	if err != nil {
 		return err
 	}

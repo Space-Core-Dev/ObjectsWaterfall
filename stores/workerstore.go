@@ -3,30 +3,26 @@ package stores
 import (
 	"errors"
 
-	bbl "object-shooter.com/BBL"
+	"object-shooter.com/core/services"
 )
 
-type WorkerStore interface {
-	Add(worker *bbl.Worker) int
-	CancelWork(id int)
-	Remove(id int) error
-}
-
 type workerStore struct {
-	workers map[int]*bbl.Worker
+	workers map[int]*services.Worker
 }
 
-var store WorkerStore
+var store services.WorkerStore
 
-func GetWorkerStore() WorkerStore {
+func GetWorkerStore() services.WorkerStore {
 	if store != nil {
 		return store
 	}
-	store = &workerStore{}
+	store = &workerStore{
+		workers: map[int]*services.Worker{},
+	}
 	return store
 }
 
-func (w *workerStore) Add(worker *bbl.Worker) int {
+func (w *workerStore) Add(worker *services.Worker) int {
 	var last int
 	for k := range w.workers {
 		last = k
@@ -38,14 +34,14 @@ func (w *workerStore) Add(worker *bbl.Worker) int {
 }
 
 func (w *workerStore) CancelWork(workerId int) {
-	w.workers[workerId].Cancel()
+	(*w.workers[workerId]).Cancel()
 }
 
 func (w *workerStore) Remove(workerId int) error {
 	if _, ok := w.workers[workerId]; !ok {
 		return errors.New("wrong worker identifire")
 	}
-	w.workers[workerId].Cancel()
+	(*w.workers[workerId]).Cancel()
 	delete(w.workers, workerId)
 	return nil
 }

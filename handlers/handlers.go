@@ -21,10 +21,10 @@ func Start(ctx *gin.Context) {
 	store := stores.GetWorkerStore()
 	duration := time.Now().Add(time.Minute * time.Duration(workerSettings.Timer))
 	context, cancel := context.WithDeadline(context.Background(), duration)
-	worker := bbl.NewWorker(context, cancel, func() int { return 1 })
-	workerId := store.Add(worker)
+	worker := bbl.NewSendWorker(workerSettings, cancel)
+	workerId := store.Add(&worker)
 
-	go worker.StartWork()
+	go worker.DoWork(context)
 
 	ctx.JSON(http.StatusBadRequest, gin.H{"workerId": workerId})
 }
