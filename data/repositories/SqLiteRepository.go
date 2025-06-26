@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"fmt"
-	"math/rand"
 
 	"object-shooter.com/data"
 )
@@ -58,12 +57,7 @@ func (r MySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
 	return nil
 }
 
-func (r MySqlRepositiry[T]) GetData(tableName string, isRandom bool, take, skip int64) ([]T, error) {
-	if isRandom {
-		take = rand.Int63n(50)
-		skip = rand.Int63n(50)
-	}
-
+func (r MySqlRepositiry[T]) GetData(tableName string, isRandom bool, take int, skip int64) ([]T, error) {
 	rows, err := data.DbContext.Db.Query(fmt.Sprintf(data.GetJson, tableName), skip, take)
 	if err != nil {
 		return nil, err
@@ -80,6 +74,16 @@ func (r MySqlRepositiry[T]) GetData(tableName string, isRandom bool, take, skip 
 	}
 
 	return jsons, nil
+}
+
+func (r MySqlRepositiry[T]) Count(tableName string) (int64, error) {
+	var count int64
+	err := data.DbContext.Db.QueryRow(fmt.Sprintf(data.Count, tableName)).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func createTable(tableName string) error {

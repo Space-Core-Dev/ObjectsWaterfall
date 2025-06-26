@@ -8,3 +8,5 @@ json_data TEXT
 const InsertData = `INSERT INTO %s (json_data) values (?)`
 
 const GetJson = `SELECT json_data FROM %s LIMIT ?, ?`
+
+const Count = `Select count () from %s`

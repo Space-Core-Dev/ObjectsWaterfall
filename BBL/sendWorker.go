@@ -3,6 +3,7 @@ package bbl
 import (
 	"context"
 	"log"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -53,7 +54,7 @@ func (w *SendWorker) DoWork(ctx context.Context) {
 			i++
 			w.actualWork()
 			log.Printf("It has worked %d times", i)
-			time.Sleep(time.Duration(w.settings.RequestDelay))
+			time.Sleep(time.Second * time.Duration(w.settings.RequestDelay))
 		}
 	}
 }
@@ -66,14 +67,7 @@ func (w *SendWorker) Cancel() {
 func (w *SendWorker) actualWork() {
 	defer w.group.Done()
 	dataCh := make(chan dataResult)
-	go func() {
-		data, err := w.repo.GetData(w.settings.TableName, w.settings.Random, w.settings.WritesNumberToSend, 0)
-		dataCh <- dataResult{
-			data: data,
-			err:  err,
-		}
-		close(dataCh)
-	}()
+	go w.getData(dataCh)
 
 	dataResult := <-dataCh
 	if dataResult.err != nil {
@@ -82,15 +76,7 @@ func (w *SendWorker) actualWork() {
 	}
 
 	respCh := make(chan requestResult)
-	go func() {
-		sending := NewSendingService()
-		resp, err := sending.SendRequest(w.settings.ConsumerSettings.Host, dataResult.data, nil)
-		respCh <- requestResult{
-			requestRes: resp,
-			err:        err,
-		}
-		close(respCh)
-	}()
+	go w.sendRequest(dataResult, respCh)
 
 	respRes := <-respCh
 	if respRes.err != nil {
@@ -99,4 +85,34 @@ func (w *SendWorker) actualWork() {
 	}
 
 	log.Println(respRes)
+}
+
+func (w *SendWorker) getData(dataCh chan dataResult) {
+	var skip int64
+	if w.settings.Random {
+		count, err := w.repo.Count(w.settings.TableName)
+		if err != nil {
+			dataCh <- dataResult{
+				data: nil,
+				err:  err,
+			}
+		}
+		skip = rand.Int63n(count)
+	}
+	data, err := w.repo.GetData(w.settings.TableName, w.settings.Random, w.settings.WritesNumberToSend, skip)
+	dataCh <- dataResult{
+		data: data,
+		err:  err,
+	}
+	close(dataCh)
+}
+
+func (w *SendWorker) sendRequest(data dataResult, respCh chan requestResult) {
+	sending := NewSendingService()
+	resp, err := sending.SendRequest(w.settings.ConsumerSettings.Host, data.data, nil)
+	respCh <- requestResult{
+		requestRes: resp,
+		err:        err,
+	}
+	close(respCh)
 }
