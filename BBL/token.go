@@ -2,31 +2,43 @@ package bbl
 
 import (
 	"bytes"
-	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
-func GetTokenFromUrl(url, userName, password string) (string, error) {
-	credentials := map[string]string{
-		userName: userName,
-		password: password,
-	}
+type TokenService struct {
+	authUrl   string
+	authModel string
+	token     string
+	expires   time.Time
+}
 
-	data, err := json.Marshal(credentials)
-	if err != nil {
-		return "", err
-	}
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+func (t *TokenService) GetTokenFromUrl() (string, error) {
+	resp, err := http.Post(t.authUrl, "application/json", bytes.NewBufferString(t.authModel))
 	if err != nil {
 		return "", err
 	}
 	resp.Body.Close()
-
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("code: %d. message: %s", resp.StatusCode, resp.Status)
+	}
 	token, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
 
 	return string(token), nil
+}
+
+func (t *TokenService) Token() (string, error) {
+	var err error
+	if time.Now().After(t.expires) {
+		t.token, err = t.GetTokenFromUrl()
+		if err != nil {
+			return "", err
+		}
+	}
+	return t.token, nil
 }

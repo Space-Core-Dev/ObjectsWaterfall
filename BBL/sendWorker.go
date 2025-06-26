@@ -2,6 +2,7 @@ package bbl
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"sync"
@@ -10,14 +11,17 @@ import (
 	"object-shooter.com/core/models"
 	"object-shooter.com/core/services"
 	"object-shooter.com/data/repositories"
+	"object-shooter.com/utils/stopwatch"
 )
 
 // All logs will be moved to display presenter soon
 type SendWorker struct {
-	settings   models.BackgroundWorkerSettings
-	cancelFunc context.CancelFunc
-	group      sync.WaitGroup
-	repo       repositories.Repository[string]
+	settings     models.BackgroundWorkerSettings
+	cancelFunc   context.CancelFunc
+	group        sync.WaitGroup
+	repo         repositories.Repository[string]
+	totalSended  int64
+	tokenService TokenService
 }
 
 type dataResult struct {
@@ -36,25 +40,23 @@ func NewSendWorker(settings models.BackgroundWorkerSettings, cancel context.Canc
 		panic(err)
 	}
 	return &SendWorker{
-		settings:   settings,
-		cancelFunc: cancel,
-		repo:       repo,
+		settings:     settings,
+		cancelFunc:   cancel,
+		repo:         repo,
+		tokenService: TokenService{},
 	}
 }
 
 func (w *SendWorker) DoWork(ctx context.Context) {
-	i := 0
+	log.Printf("Worker was started at %v", time.Now())
+	var counter int64
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("Worker has been stoped because of: %s", ctx.Err().Error())
+			log.Printf("Worker was stoped at %v, because of: %s ", time.Now(), ctx.Err().Error())
 			return
 		default:
-			w.group.Add(1) // Work starts here that's why w.group.Add(1) is here
-			i++
-			w.actualWork()
-			log.Printf("It has worked %d times", i)
-			time.Sleep(time.Second * time.Duration(w.settings.RequestDelay))
+			w.work(counter)
 		}
 	}
 }
@@ -62,6 +64,30 @@ func (w *SendWorker) DoWork(ctx context.Context) {
 func (w *SendWorker) Cancel() {
 	w.cancelFunc()
 	w.group.Wait()
+}
+
+func (w *SendWorker) work(counter int64) {
+	w.group.Add(1)
+	sw := stopwatch.NewStopWatch()
+	sw.Start()
+	w.actualWork()
+	requstDuration := sw.Elapsed(time.Second)
+	log.Printf("Request %d takes %.2f seconds || Total amount of records have been sent: %d", counter, requstDuration, w.totalSended)
+
+	time.Sleep(time.Duration(w.settings.RequestDelay) * time.Second)
+	
+	tableCount, _ := w.repo.Count(w.settings.TableName)
+	stopWhenEnd := w.settings.StopWhenTableEnds
+	random := w.settings.Random
+
+	if tableCount <= w.totalSended {
+		switch {
+		case !stopWhenEnd && !random:
+			w.totalSended = 0
+		case stopWhenEnd && !random:
+			w.cancelFunc()
+		}
+	}
 }
 
 func (w *SendWorker) actualWork() {
@@ -88,6 +114,7 @@ func (w *SendWorker) actualWork() {
 }
 
 func (w *SendWorker) getData(dataCh chan dataResult) {
+	defer close(dataCh)
 	var skip int64
 	if w.settings.Random {
 		count, err := w.repo.Count(w.settings.TableName)
@@ -96,23 +123,43 @@ func (w *SendWorker) getData(dataCh chan dataResult) {
 				data: nil,
 				err:  err,
 			}
+			return
 		}
 		skip = rand.Int63n(count)
+	} else {
+		skip = w.totalSended
 	}
+
 	data, err := w.repo.GetData(w.settings.TableName, w.settings.Random, w.settings.WritesNumberToSend, skip)
 	dataCh <- dataResult{
 		data: data,
 		err:  err,
 	}
-	close(dataCh)
 }
 
 func (w *SendWorker) sendRequest(data dataResult, respCh chan requestResult) {
+	defer close(respCh)
 	sending := NewSendingService()
-	resp, err := sending.SendRequest(w.settings.ConsumerSettings.Host, data.data, nil)
+	var (
+		token   string
+		headers = make(map[string]string)
+	)
+	if w.settings.ConsumerSettings.AuthModel != "" {
+		var err error
+		token, err = w.tokenService.Token()
+		if err != nil {
+			respCh <- requestResult{
+				requestRes: models.ResponseResult{},
+				err:        err,
+			}
+			return
+		}
+		headers["Authorization"] = fmt.Sprintf("Bearer %s", token)
+	}
+	resp, err := sending.SendRequest(w.settings.ConsumerSettings.Host, data.data, headers)
 	respCh <- requestResult{
 		requestRes: resp,
 		err:        err,
 	}
-	close(respCh)
+	w.totalSended += int64(len(data.data))
 }
