@@ -15,10 +15,15 @@ type Repository[T any] interface {
 	Count(tableName string) (int64, error)
 }
 
-func NewRepository[T any]() (Repository[T], error) {
+type SqLiteRepository[T any] interface {
+	Repository[T]
+	GetAllTables() ([]string, error)
+}
+
+func NewRepository[T any]() (SqLiteRepository[T], error) {
 	switch data.DbContext.Driver {
 	case SQ_LITE:
-		return MySqlRepositiry[T]{}, nil
+		return mySqlRepositiry[T]{}, nil
 	default:
 		return nil, fmt.Errorf("there is no repository for %s driver", data.DbContext.Driver)
 	}

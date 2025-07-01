@@ -21,6 +21,7 @@ func main() {
 	engine.POST("/start", handlers.Start)
 	engine.GET("/stop", handlers.Stop)
 	engine.POST("/seed", handlers.Seed)
+	engine.GET("/get-tables", handlers.GetTables)
 
 	engine.Run(":8888")
 }

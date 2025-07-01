@@ -6,10 +6,10 @@ import (
 	"objectswaterfall.com/data"
 )
 
-type MySqlRepositiry[T any] struct {
+type mySqlRepositiry[T any] struct {
 }
 
-func (r MySqlRepositiry[T]) SetData(tableName string, jData T) error {
+func (r mySqlRepositiry[T]) SetData(tableName string, jData T) error {
 	if err := createTable(tableName); err != nil {
 		return nil
 	}
@@ -27,7 +27,7 @@ func (r MySqlRepositiry[T]) SetData(tableName string, jData T) error {
 	return nil
 }
 
-func (r MySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
+func (r mySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
 	if err := createTable(tableName); err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (r MySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
 	return nil
 }
 
-func (r MySqlRepositiry[T]) GetData(tableName string, isRandom bool, take int, skip int64) ([]T, error) {
+func (r mySqlRepositiry[T]) GetData(tableName string, isRandom bool, take int, skip int64) ([]T, error) {
 	rows, err := data.DbContext.Db.Query(fmt.Sprintf(data.GetJson, tableName), skip, take)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (r MySqlRepositiry[T]) GetData(tableName string, isRandom bool, take int, s
 	return jsons, nil
 }
 
-func (r MySqlRepositiry[T]) Count(tableName string) (int64, error) {
+func (r mySqlRepositiry[T]) Count(tableName string) (int64, error) {
 	var count int64
 	err := data.DbContext.Db.QueryRow(fmt.Sprintf(data.Count, tableName)).Scan(&count)
 	if err != nil {
@@ -84,6 +84,26 @@ func (r MySqlRepositiry[T]) Count(tableName string) (int64, error) {
 	}
 
 	return count, nil
+}
+
+func (r mySqlRepositiry[T]) GetAllTables() ([]string, error) {
+
+	rows, err := data.DbContext.Db.Query(data.Tables)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var names []string
+	for rows.Next() {
+		var name string
+		err := rows.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+
+	return names, nil
 }
 
 func createTable(tableName string) error {

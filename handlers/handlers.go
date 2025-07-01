@@ -2,14 +2,19 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	bbl "objectswaterfall.com/BBL"
 	"objectswaterfall.com/core/models"
+	"objectswaterfall.com/data/repositories"
 	"objectswaterfall.com/stores"
 )
+
+// TODO: In plans making the list of workers which are saved with all settings in database for reuse
 
 func Start(ctx *gin.Context) {
 	var workerSettings models.BackgroundWorkerSettings
@@ -26,11 +31,29 @@ func Start(ctx *gin.Context) {
 
 	go worker.DoWork(context)
 
-	ctx.JSON(http.StatusBadRequest, gin.H{"workerId": workerId})
+	ctx.JSON(http.StatusOK, gin.H{"workerId": workerId})
 }
 
 func Stop(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Query("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if id == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": errors.New("id shouldn't be 0")})
+		return
+	}
 
+	store := stores.GetWorkerStore()
+	store.CancelWork(id)
+	err = store.Remove(id)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"result": "Ok"})
 }
 
 func Seed(ctx *gin.Context) {
@@ -48,5 +71,24 @@ func Seed(ctx *gin.Context) {
 
 	if err = <-errCh; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
+
+	ctx.JSON(http.StatusOK, gin.H{"result": "Ok"})
+}
+
+func GetTables(ctx *gin.Context) {
+	repo, err := repositories.NewRepository[any]()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	tables, err := repo.GetAllTables()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"result": tables})
 }
