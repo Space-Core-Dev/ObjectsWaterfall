@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"object-shooter.com/core/models"
-	"object-shooter.com/core/services"
-	"object-shooter.com/data/repositories"
-	"object-shooter.com/utils/stopwatch"
+	"objectswaterfall.com/core/models"
+	"objectswaterfall.com/core/services"
+	"objectswaterfall.com/data/repositories"
+	"objectswaterfall.com/utils/stopwatch"
 )
 
 // All logs will be moved to display presenter soon
@@ -75,7 +75,7 @@ func (w *SendWorker) work(counter int64) {
 	log.Printf("Request %d takes %.2f seconds || Total amount of records have been sent: %d", counter, requstDuration, w.totalSended)
 
 	time.Sleep(time.Duration(w.settings.RequestDelay) * time.Second)
-	
+
 	tableCount, _ := w.repo.Count(w.settings.TableName)
 	stopWhenEnd := w.settings.StopWhenTableEnds
 	random := w.settings.Random

@@ -3,7 +3,7 @@ package stores
 import (
 	"errors"
 
-	"object-shooter.com/core/services"
+	"objectswaterfall.com/core/services"
 )
 
 type workerStore struct {

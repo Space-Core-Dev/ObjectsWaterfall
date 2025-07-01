@@ -3,7 +3,7 @@ package repositories
 import (
 	"fmt"
 
-	"object-shooter.com/data"
+	"objectswaterfall.com/data"
 )
 
 type MySqlRepositiry[T any] struct {

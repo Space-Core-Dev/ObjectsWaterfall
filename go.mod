@@ -1,4 +1,4 @@
-module object-shooter.com
+module objectswaterfall.com
 
 go 1.24.0
 

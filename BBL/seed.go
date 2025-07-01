@@ -5,9 +5,9 @@ import (
 	"errors"
 	"sync"
 
-	"object-shooter.com/core/models"
-	"object-shooter.com/data/repositories"
-	"object-shooter.com/utils"
+	"objectswaterfall.com/core/models"
+	"objectswaterfall.com/data/repositories"
+	"objectswaterfall.com/utils"
 )
 
 type SeedProcessor struct {

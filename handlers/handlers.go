@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	bbl "object-shooter.com/BBL"
-	"object-shooter.com/core/models"
-	"object-shooter.com/stores"
+	bbl "objectswaterfall.com/BBL"
+	"objectswaterfall.com/core/models"
+	"objectswaterfall.com/stores"
 )
 
 func Start(ctx *gin.Context) {

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"object-shooter.com/core/models"
-	"object-shooter.com/core/services"
+	"objectswaterfall.com/core/models"
+	"objectswaterfall.com/core/services"
 )
 
 type sendingService struct {

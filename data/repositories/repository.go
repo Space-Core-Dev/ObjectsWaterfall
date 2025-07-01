@@ -3,7 +3,7 @@ package repositories
 import (
 	"fmt"
 
-	"object-shooter.com/data"
+	"objectswaterfall.com/data"
 )
 
 const SQ_LITE = "sqlite3"
