@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"object-shooter.com/data"
-	"object-shooter.com/handlers"
+	"objectswaterfall.com/data"
+	"objectswaterfall.com/handlers"
 )
 
 func main() {
