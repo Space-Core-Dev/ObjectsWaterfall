@@ -3,6 +3,7 @@ package repositories
 import (
 	"fmt"
 
+	"objectswaterfall.com/core/models"
 	"objectswaterfall.com/data"
 )
 
@@ -104,6 +105,52 @@ func (r mySqlRepositiry[T]) GetAllTables() ([]string, error) {
 	}
 
 	return names, nil
+}
+
+func (r mySqlRepositiry[T]) AddSettings(settings models.BackgroundWorkerSettings) error {
+	_, err := data.DbContext.Db.Exec(data.CreateWorkerSettingsTable)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := data.DbContext.Db.Prepare(data.InsertWorkerSettings)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	//TODO: fix, if it dotsn't recieve whole struct as a severa parameters
+	_, err = stmt.Exec(
+		settings.TableName,
+		settings.Timer,
+		settings.RequestDelay,
+		settings.Random,
+		settings.WritesNumberToSend,
+		settings.TotalToSend,
+		settings.StopWhenTableEnds)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r mySqlRepositiry[T]) GetWorkerSettings(settingsTableName string) (*models.BackgroundWorkerSettings, error) {
+	row := data.DbContext.Db.QueryRow(data.GetWorkerSettings, settingsTableName)
+
+	var settings models.BackgroundWorkerSettings
+	err := row.Scan(&settings.TableName,
+		&settings.Timer,
+		&settings.RequestDelay,
+		&settings.Random,
+		&settings.WritesNumberToSend,
+		&settings.TotalToSend,
+		&settings.StopWhenTableEnds)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &settings, nil
 }
 
 func createTable(tableName string) error {

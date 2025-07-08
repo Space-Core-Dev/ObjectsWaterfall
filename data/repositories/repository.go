@@ -3,6 +3,7 @@ package repositories
 import (
 	"fmt"
 
+	"objectswaterfall.com/core/models"
 	"objectswaterfall.com/data"
 )
 
@@ -18,6 +19,8 @@ type Repository[T any] interface {
 type SqLiteRepository[T any] interface {
 	Repository[T]
 	GetAllTables() ([]string, error)
+	AddSettings(settings models.BackgroundWorkerSettings) error
+	GetWorkerSettings(settingsTableName string) (*models.BackgroundWorkerSettings, error)
 }
 
 func NewRepository[T any]() (SqLiteRepository[T], error) {

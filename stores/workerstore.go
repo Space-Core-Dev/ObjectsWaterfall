@@ -33,6 +33,24 @@ func (w *workerStore) Add(worker *services.Worker) int {
 	return workerId
 }
 
+func (w *workerStore) Get(workerId int) (*services.Worker, error) {
+	if worker, ok := w.workers[workerId]; ok {
+		return worker, nil
+	}
+
+	return nil, errors.New("wrong worker identifire")
+}
+
+func (w *workerStore) Exists(name string) bool {
+	for _, v := range w.workers {
+		if (*v).GetTableName() == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (w *workerStore) CancelWork(workerId int) {
 	(*w.workers[workerId]).Cancel()
 }

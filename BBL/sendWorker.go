@@ -34,14 +34,14 @@ type requestResult struct {
 	err        error
 }
 
-func NewSendWorker(settings models.BackgroundWorkerSettings, cancel context.CancelFunc) services.Worker {
+func NewSendWorker(settings models.BackgroundWorkerSettings /*, cancel context.CancelFunc */) services.Worker {
 	repo, err := repositories.NewRepository[string]()
 	if err != nil {
 		panic(err)
 	}
 	return &SendWorker{
-		settings:     settings,
-		cancelFunc:   cancel,
+		settings: settings,
+		//cancelFunc:   cancel,
 		repo:         repo,
 		tokenService: TokenService{},
 	}
@@ -61,9 +61,17 @@ func (w *SendWorker) DoWork(ctx context.Context) {
 	}
 }
 
+func (w *SendWorker) SetCancel(cancel context.CancelFunc) {
+	w.cancelFunc = cancel
+}
+
 func (w *SendWorker) Cancel() {
 	w.cancelFunc()
 	w.group.Wait()
+}
+
+func (w *SendWorker) GetTableName() string {
+	return w.settings.TableName
 }
 
 func (w *SendWorker) work(counter int64) {

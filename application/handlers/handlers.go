@@ -3,30 +3,71 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	bbl "objectswaterfall.com/BBL"
+	"objectswaterfall.com/application/dtos"
+	"objectswaterfall.com/core/mappers"
 	"objectswaterfall.com/core/models"
 	"objectswaterfall.com/data/repositories"
 	"objectswaterfall.com/stores"
 )
 
-// TODO: In plans making the list of workers which are saved with all settings in database for reuse
-
-func Start(ctx *gin.Context) {
-	var workerSettings models.BackgroundWorkerSettings
-	if err := ctx.ShouldBindBodyWithJSON(&workerSettings); err != nil {
+func Add(ctx *gin.Context) {
+	var workerSettingsDto dtos.BackgroundWorkerSettingsDto
+	if err := ctx.ShouldBindBodyWithJSON(&workerSettingsDto); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
+	repo, err := repositories.NewRepository[any]()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workerSettings := mappers.FromDtoToWorkerSettings(workerSettingsDto)
+	if err := repo.AddSettings(workerSettings); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+}
+
+func Start(ctx *gin.Context) {
+	name := ctx.Query("name")
+
 	store := stores.GetWorkerStore()
+	if store.Exists(name) {
+		ctx.JSON(http.StatusConflict, gin.H{"Error": fmt.Sprintf("The worker %s is running alredy", name)})
+	}
+
+	var consumerSettings models.ConsumerSettings
+	if err := ctx.ShouldBindBodyWithJSON(&consumerSettings); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	repo, err := repositories.NewRepository[any]()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workerSettings, err := repo.GetWorkerSettings(name)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	workerSettings.ConsumerSettings = consumerSettings
+
 	duration := time.Now().Add(time.Minute * time.Duration(workerSettings.Timer))
 	context, cancel := context.WithDeadline(context.Background(), duration)
-	worker := bbl.NewSendWorker(workerSettings, cancel)
+	worker := bbl.NewSendWorker(*workerSettings)
+	worker.SetCancel(cancel)
 	workerId := store.Add(&worker)
 
 	go worker.DoWork(context)
