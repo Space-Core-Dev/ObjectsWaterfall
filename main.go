@@ -18,10 +18,11 @@ func main() {
 	}
 	engine := gin.Default()
 
-	engine.POST("/start", handlers.Add)
+	engine.POST("/add", handlers.Add)
+	engine.POST("/start", handlers.Start)
 	engine.GET("/stop", handlers.Stop)
 	engine.POST("/seed", handlers.Seed)
-	engine.GET("/get-tables", handlers.GetTables)
+	engine.GET("/getWorkers", handlers.GetWorkers)
 
 	engine.Run(":8888")
 }

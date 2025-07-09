@@ -118,14 +118,14 @@ func Seed(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"result": "Ok"})
 }
 
-func GetTables(ctx *gin.Context) {
+func GetWorkers(ctx *gin.Context) {
 	repo, err := repositories.NewRepository[any]()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	tables, err := repo.GetAllTables()
+	tables, err := repo.GetAllWorkers()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

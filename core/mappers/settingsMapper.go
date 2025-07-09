@@ -7,7 +7,7 @@ import (
 
 func FromDtoToWorkerSettings(dto dtos.BackgroundWorkerSettingsDto) models.BackgroundWorkerSettings {
 	return models.BackgroundWorkerSettings{
-		TableName:          dto.TableName,
+		WorkerName:         dto.WorkerName,
 		Timer:              dto.Timer,
 		RequestDelay:       dto.RequestDelay,
 		Random:             dto.Random,

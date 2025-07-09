@@ -10,17 +10,17 @@ import (
 const SQ_LITE = "sqlite3"
 
 type Repository[T any] interface {
-	SetData(tableName string, data T) error
-	SetChankData(tableName string, jData []T) error
-	GetData(tableName string, isRandom bool, take int, skip int64) ([]T, error)
-	Count(tableName string) (int64, error)
+	SetData(workerName string, data T) error
+	SetChankData(workerName string, jData []T) error
+	GetData(workerName string, isRandom bool, take int, skip int64) ([]T, error)
+	Count(workerName string) (int64, error)
 }
 
 type SqLiteRepository[T any] interface {
 	Repository[T]
-	GetAllTables() ([]string, error)
+	GetAllWorkers() ([]string, error)
 	AddSettings(settings models.BackgroundWorkerSettings) error
-	GetWorkerSettings(settingsTableName string) (*models.BackgroundWorkerSettings, error)
+	GetWorkerSettings(settingsWorkerName string) (*models.BackgroundWorkerSettings, error)
 }
 
 func NewRepository[T any]() (SqLiteRepository[T], error) {

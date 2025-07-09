@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"database/sql"
 	"fmt"
 
 	"objectswaterfall.com/core/models"
@@ -10,12 +11,12 @@ import (
 type mySqlRepositiry[T any] struct {
 }
 
-func (r mySqlRepositiry[T]) SetData(tableName string, jData T) error {
-	if err := createTable(tableName); err != nil {
+func (r mySqlRepositiry[T]) SetData(workerName string, jData T) error {
+	if err := createTable(workerName); err != nil {
 		return nil
 	}
 
-	stmt, err := data.DbContext.Db.Prepare(fmt.Sprintf(data.InsertData, tableName))
+	stmt, err := data.DbContext.Db.Prepare(fmt.Sprintf(data.InsertData, workerName))
 	if err != nil {
 		return err
 	}
@@ -28,8 +29,8 @@ func (r mySqlRepositiry[T]) SetData(tableName string, jData T) error {
 	return nil
 }
 
-func (r mySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
-	if err := createTable(tableName); err != nil {
+func (r mySqlRepositiry[T]) SetChankData(workerName string, jData []T) error {
+	if err := createTable(workerName); err != nil {
 		return err
 	}
 	tx, err := data.DbContext.Db.Begin()
@@ -37,7 +38,7 @@ func (r mySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(fmt.Sprintf(data.InsertData, tableName))
+	stmt, err := tx.Prepare(fmt.Sprintf(data.InsertData, workerName))
 	if err != nil {
 		return err
 	}
@@ -58,8 +59,8 @@ func (r mySqlRepositiry[T]) SetChankData(tableName string, jData []T) error {
 	return nil
 }
 
-func (r mySqlRepositiry[T]) GetData(tableName string, isRandom bool, take int, skip int64) ([]T, error) {
-	rows, err := data.DbContext.Db.Query(fmt.Sprintf(data.GetJson, tableName), skip, take)
+func (r mySqlRepositiry[T]) GetData(workerName string, isRandom bool, take int, skip int64) ([]T, error) {
+	rows, err := data.DbContext.Db.Query(fmt.Sprintf(data.GetJson, workerName), skip, take)
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +78,9 @@ func (r mySqlRepositiry[T]) GetData(tableName string, isRandom bool, take int, s
 	return jsons, nil
 }
 
-func (r mySqlRepositiry[T]) Count(tableName string) (int64, error) {
+func (r mySqlRepositiry[T]) Count(workerName string) (int64, error) {
 	var count int64
-	err := data.DbContext.Db.QueryRow(fmt.Sprintf(data.Count, tableName)).Scan(&count)
+	err := data.DbContext.Db.QueryRow(fmt.Sprintf(data.Count, workerName)).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -87,9 +88,8 @@ func (r mySqlRepositiry[T]) Count(tableName string) (int64, error) {
 	return count, nil
 }
 
-func (r mySqlRepositiry[T]) GetAllTables() ([]string, error) {
-
-	rows, err := data.DbContext.Db.Query(data.Tables)
+func (r mySqlRepositiry[T]) GetAllWorkers() ([]string, error) {
+	rows, err := data.DbContext.Db.Query(data.Workers)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,16 @@ func (r mySqlRepositiry[T]) GetAllTables() ([]string, error) {
 }
 
 func (r mySqlRepositiry[T]) AddSettings(settings models.BackgroundWorkerSettings) error {
-	_, err := data.DbContext.Db.Exec(data.CreateWorkerSettingsTable)
+	var err error
+	var existingTable string
+	err = data.DbContext.Db.QueryRow(data.Exists, settings.WorkerName).Scan(&existingTable)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	} else if existingTable != "" {
+		return fmt.Errorf("table %s already exists", settings.WorkerName)
+	}
+
+	_, err = data.DbContext.Db.Exec(data.CreateWorkerSettingsTable)
 	if err != nil {
 		return err
 	}
@@ -118,9 +127,8 @@ func (r mySqlRepositiry[T]) AddSettings(settings models.BackgroundWorkerSettings
 		return err
 	}
 	defer stmt.Close()
-	//TODO: fix, if it dotsn't recieve whole struct as a severa parameters
 	_, err = stmt.Exec(
-		settings.TableName,
+		settings.WorkerName,
 		settings.Timer,
 		settings.RequestDelay,
 		settings.Random,
@@ -131,14 +139,19 @@ func (r mySqlRepositiry[T]) AddSettings(settings models.BackgroundWorkerSettings
 		return err
 	}
 
+	err = createTable(settings.WorkerName)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (r mySqlRepositiry[T]) GetWorkerSettings(settingsTableName string) (*models.BackgroundWorkerSettings, error) {
-	row := data.DbContext.Db.QueryRow(data.GetWorkerSettings, settingsTableName)
+func (r mySqlRepositiry[T]) GetWorkerSettings(settingsWorkerName string) (*models.BackgroundWorkerSettings, error) {
+	row := data.DbContext.Db.QueryRow(data.GetWorkerSettings, settingsWorkerName)
 
 	var settings models.BackgroundWorkerSettings
-	err := row.Scan(&settings.TableName,
+	err := row.Scan(&settings.WorkerName,
 		&settings.Timer,
 		&settings.RequestDelay,
 		&settings.Random,
@@ -153,8 +166,8 @@ func (r mySqlRepositiry[T]) GetWorkerSettings(settingsTableName string) (*models
 	return &settings, nil
 }
 
-func createTable(tableName string) error {
-	stmt, err := data.DbContext.Db.Prepare(fmt.Sprintf(data.CreateTable, tableName))
+func createTable(workerName string) error {
+	stmt, err := data.DbContext.Db.Prepare(fmt.Sprintf(data.CreateTable, workerName))
 	if err != nil {
 		return err
 	}

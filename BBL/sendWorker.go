@@ -71,7 +71,7 @@ func (w *SendWorker) Cancel() {
 }
 
 func (w *SendWorker) GetTableName() string {
-	return w.settings.TableName
+	return w.settings.WorkerName
 }
 
 func (w *SendWorker) work(counter int64) {
@@ -84,7 +84,7 @@ func (w *SendWorker) work(counter int64) {
 
 	time.Sleep(time.Duration(w.settings.RequestDelay) * time.Second)
 
-	tableCount, _ := w.repo.Count(w.settings.TableName)
+	tableCount, _ := w.repo.Count(w.settings.WorkerName)
 	stopWhenEnd := w.settings.StopWhenTableEnds
 	random := w.settings.Random
 
@@ -125,7 +125,7 @@ func (w *SendWorker) getData(dataCh chan dataResult) {
 	defer close(dataCh)
 	var skip int64
 	if w.settings.Random {
-		count, err := w.repo.Count(w.settings.TableName)
+		count, err := w.repo.Count(w.settings.WorkerName)
 		if err != nil {
 			dataCh <- dataResult{
 				data: nil,
@@ -138,7 +138,7 @@ func (w *SendWorker) getData(dataCh chan dataResult) {
 		skip = w.totalSended
 	}
 
-	data, err := w.repo.GetData(w.settings.TableName, w.settings.Random, w.settings.WritesNumberToSend, skip)
+	data, err := w.repo.GetData(w.settings.WorkerName, w.settings.Random, w.settings.WritesNumberToSend, skip)
 	dataCh <- dataResult{
 		data: data,
 		err:  err,

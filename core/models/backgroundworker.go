@@ -5,7 +5,7 @@ import "context"
 type Work func(ctx context.Context) int
 
 type BackgroundWorkerSettings struct {
-	TableName          string           `json:"tableName"`
+	WorkerName         string           `json:"workerName"`
 	Timer              float64          `json:"timer"`
 	RequestDelay       int              `json:"requestDellay"`
 	Random             bool             `json:"random"`

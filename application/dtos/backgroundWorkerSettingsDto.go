@@ -1,7 +1,7 @@
 package dtos
 
 type BackgroundWorkerSettingsDto struct {
-	TableName          string  `json:"tableName"`
+	WorkerName         string  `json:"workerName"`
 	Timer              float64 `json:"timer"`
 	RequestDelay       int     `json:"requestDellay"`
 	Random             bool    `json:"random"`
