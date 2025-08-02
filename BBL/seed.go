@@ -11,9 +11,9 @@ import (
 )
 
 type SeedProcessor struct {
-	TableName string `json:"tableName"`
-	Jstr      string `json:"jStr"`
-	Count     int    `json:"count"`
+	WorkerName string `json:"workerName"`
+	Jstr       string `json:"jStr"`
+	Count      int    `json:"count"`
 }
 
 // TODO: Add context.Context for canceling
@@ -29,12 +29,12 @@ func (s SeedProcessor) ProcessJson(areChanks bool, inChank int) error {
 	}
 
 	if areChanks {
-		return insertChanksToDatabase(&jArray, s.TableName, s.Count, inChank)
+		return insertChanksToDatabase(&jArray, s.WorkerName, s.Count, inChank)
 	}
-	return insertToDatabase(&jArray, s.TableName, s.Count)
+	return insertToDatabase(&jArray, s.WorkerName, s.Count)
 }
 
-func insertToDatabase(jArray *models.JArray, tableName string, howMuch int) error {
+func insertToDatabase(jArray *models.JArray, workerName string, howMuch int) error {
 	errCh := make(chan error)
 	repo, err := repositories.NewRepository[string]()
 	if err != nil {
@@ -54,7 +54,7 @@ func insertToDatabase(jArray *models.JArray, tableName string, howMuch int) erro
 		}
 		jStr := string(dummyData)
 		go func() {
-			errCh <- repo.SetData(tableName, jStr)
+			errCh <- repo.SetData(workerName, jStr)
 		}()
 
 		if err = <-errCh; err != nil {
@@ -65,8 +65,8 @@ func insertToDatabase(jArray *models.JArray, tableName string, howMuch int) erro
 	return nil
 }
 
-func insertChanksToDatabase(jArray *models.JArray, tableName string, howMuch, inChank int) error {
-	errCh := make(chan error, 10)
+func insertChanksToDatabase(jArray *models.JArray, workerName string, howMuch, inChank int) error {
+	errCh := make(chan error, inChank)
 	var chank []string
 	var wg sync.WaitGroup
 	repo, err := repositories.NewRepository[string]()
@@ -90,7 +90,7 @@ func insertChanksToDatabase(jArray *models.JArray, tableName string, howMuch, in
 			wg.Add(1)
 			chankCopy := append([]string(nil), chank...)
 			go func(chankData []string) {
-				errCh <- repo.SetChankData(tableName, chankData)
+				errCh <- repo.SetChankData(workerName, chankData)
 				wg.Done()
 			}(chankCopy)
 			chank = chank[:0]

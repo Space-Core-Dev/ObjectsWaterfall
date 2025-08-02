@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"objectswaterfall.com/core/errors"
 	"objectswaterfall.com/core/models"
 	"objectswaterfall.com/core/services"
 	"objectswaterfall.com/data/repositories"
@@ -34,14 +35,14 @@ type requestResult struct {
 	err        error
 }
 
-func NewSendWorker(settings models.BackgroundWorkerSettings, cancel context.CancelFunc) services.Worker {
+func NewSendWorker(settings models.BackgroundWorkerSettings /*, cancel context.CancelFunc */) services.Worker {
 	repo, err := repositories.NewRepository[string]()
 	if err != nil {
 		panic(err)
 	}
 	return &SendWorker{
-		settings:     settings,
-		cancelFunc:   cancel,
+		settings: settings,
+		//cancelFunc:   cancel,
 		repo:         repo,
 		tokenService: TokenService{},
 	}
@@ -49,16 +50,20 @@ func NewSendWorker(settings models.BackgroundWorkerSettings, cancel context.Canc
 
 func (w *SendWorker) DoWork(ctx context.Context) {
 	log.Printf("Worker was started at %v", time.Now())
-	var counter int64
+	var counter int64 = 0
 	for {
 		select {
 		case <-ctx.Done():
 			log.Printf("Worker was stoped at %v, because of: %s ", time.Now(), ctx.Err().Error())
 			return
 		default:
-			w.work(counter)
+			w.work(&counter)
 		}
 	}
+}
+
+func (w *SendWorker) SetCancel(cancel context.CancelFunc) {
+	w.cancelFunc = cancel
 }
 
 func (w *SendWorker) Cancel() {
@@ -66,17 +71,27 @@ func (w *SendWorker) Cancel() {
 	w.group.Wait()
 }
 
-func (w *SendWorker) work(counter int64) {
+func (w *SendWorker) GetTableName() string {
+	return w.settings.WorkerName
+}
+
+func (w *SendWorker) work(counter *int64) {
 	w.group.Add(1)
 	sw := stopwatch.NewStopWatch()
 	sw.Start()
 	w.actualWork()
+	*counter += 1
 	requstDuration := sw.Elapsed(time.Second)
-	log.Printf("Request %d takes %.2f seconds || Total amount of records have been sent: %d", counter, requstDuration, w.totalSended)
+	log.Printf("Request %d of %s takes %.2f seconds || Total amount of records have been sent %d of %d", *counter, w.settings.WorkerName, requstDuration, w.totalSended, w.settings.TotalToSend)
+	if w.totalSended >= w.settings.TotalToSend {
+		log.Printf("Worker is done. Sent %d of %d", w.totalSended, w.settings.TotalToSend)
+		w.Cancel()
+		return
+	}
 
 	time.Sleep(time.Duration(w.settings.RequestDelay) * time.Second)
 
-	tableCount, _ := w.repo.Count(w.settings.TableName)
+	tableCount, _ := w.repo.Count(w.settings.WorkerName)
 	stopWhenEnd := w.settings.StopWhenTableEnds
 	random := w.settings.Random
 
@@ -85,7 +100,7 @@ func (w *SendWorker) work(counter int64) {
 		case !stopWhenEnd && !random:
 			w.totalSended = 0
 		case stopWhenEnd && !random:
-			w.cancelFunc()
+			w.Cancel()
 		}
 	}
 }
@@ -106,6 +121,11 @@ func (w *SendWorker) actualWork() {
 
 	respRes := <-respCh
 	if respRes.err != nil {
+		if _, ok := respRes.err.(errors.TokenRecievingError); ok {
+			log.Println(respRes.err)
+			w.Cancel()
+			return
+		}
 		log.Println(respRes.err)
 		return
 	}
@@ -117,7 +137,7 @@ func (w *SendWorker) getData(dataCh chan dataResult) {
 	defer close(dataCh)
 	var skip int64
 	if w.settings.Random {
-		count, err := w.repo.Count(w.settings.TableName)
+		count, err := w.repo.Count(w.settings.WorkerName)
 		if err != nil {
 			dataCh <- dataResult{
 				data: nil,
@@ -130,7 +150,7 @@ func (w *SendWorker) getData(dataCh chan dataResult) {
 		skip = w.totalSended
 	}
 
-	data, err := w.repo.GetData(w.settings.TableName, w.settings.Random, w.settings.WritesNumberToSend, skip)
+	data, err := w.repo.GetData(w.settings.WorkerName, w.settings.Random, w.settings.WritesNumberToSend, skip)
 	dataCh <- dataResult{
 		data: data,
 		err:  err,
