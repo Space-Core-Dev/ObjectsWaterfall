@@ -109,11 +109,18 @@ func (r mySqlRepositiry[T]) GetAllWorkers() ([]string, error) {
 
 func (r mySqlRepositiry[T]) AddSettings(settings models.BackgroundWorkerSettings) error {
 	var err error
-	var existingTable string
-	err = data.DbContext.Db.QueryRow(data.Exists, settings.WorkerName).Scan(&existingTable)
-	if err != nil && err != sql.ErrNoRows {
+	// var existingTable string
+	// err = data.DbContext.Db.QueryRow(data.Exists, settings.WorkerName).Scan(&existingTable)
+	// if err != nil && err != sql.ErrNoRows {
+	// 	return err
+	// } else if existingTable != "" {
+	// 	return fmt.Errorf("table %s already exists", settings.WorkerName)
+	// }
+	doExist, err := r.Exists(settings.WorkerName)
+	if err != nil {
 		return err
-	} else if existingTable != "" {
+	}
+	if doExist {
 		return fmt.Errorf("table %s already exists", settings.WorkerName)
 	}
 
@@ -164,6 +171,19 @@ func (r mySqlRepositiry[T]) GetWorkerSettings(settingsWorkerName string) (*model
 	}
 
 	return &settings, nil
+}
+
+func (r mySqlRepositiry[T]) Exists(workerName string) (bool, error) {
+	var existingTable string
+	err := data.DbContext.Db.QueryRow(data.Exists, workerName).Scan(&existingTable)
+	if err != nil && err != sql.ErrNoRows {
+		return false, err
+	} else if err == sql.ErrNoRows {
+		return false, nil
+	} else if existingTable != "" {
+		return true, nil
+	}
+	return false, nil
 }
 
 func createTable(workerName string) error {

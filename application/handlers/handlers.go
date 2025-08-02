@@ -87,7 +87,11 @@ func Stop(ctx *gin.Context) {
 	}
 
 	store := stores.GetWorkerStore()
-	store.CancelWork(id)
+	err = store.CancelWork(id)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	err = store.Remove(id)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -102,6 +106,16 @@ func Seed(ctx *gin.Context) {
 	err := ctx.ShouldBindBodyWithJSON(&seedProc)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if repo, err := repositories.NewRepository[any](); err == nil {
+		if exists, err := repo.Exists(seedProc.WorkerName); err == nil && !exists {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Errorf("there is no worker named %s", seedProc.WorkerName).Error()})
+			return
+		}
+	} else {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	errCh := make(chan error)

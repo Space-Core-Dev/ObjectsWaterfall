@@ -14,6 +14,7 @@ type Repository[T any] interface {
 	SetChankData(workerName string, jData []T) error
 	GetData(workerName string, isRandom bool, take int, skip int64) ([]T, error)
 	Count(workerName string) (int64, error)
+	Exists(workerName string) (bool, error)
 }
 
 type SqLiteRepository[T any] interface {

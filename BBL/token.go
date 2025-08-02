@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"objectswaterfall.com/core/errors"
 )
 
 type TokenService struct {
@@ -18,7 +20,7 @@ type TokenService struct {
 func (t *TokenService) GetTokenFromUrl() (string, error) {
 	resp, err := http.Post(t.authUrl, "application/json", bytes.NewBufferString(t.authModel))
 	if err != nil {
-		return "", err
+		return "", errors.NewTockenRecievingError(err.Error())
 	}
 	resp.Body.Close()
 	if resp.StatusCode != 200 {
@@ -26,7 +28,7 @@ func (t *TokenService) GetTokenFromUrl() (string, error) {
 	}
 	token, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", errors.NewTockenRecievingError(err.Error())
 	}
 
 	return string(token), nil

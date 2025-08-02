@@ -2,6 +2,7 @@ package stores
 
 import (
 	"errors"
+	"fmt"
 
 	"objectswaterfall.com/core/services"
 )
@@ -51,8 +52,12 @@ func (w *workerStore) Exists(name string) bool {
 	return false
 }
 
-func (w *workerStore) CancelWork(workerId int) {
+func (w *workerStore) CancelWork(workerId int) error {
+	if _, ok := (*w).workers[workerId]; !ok {
+		return fmt.Errorf("there is no worker with id %d", workerId)
+	}
 	(*w.workers[workerId]).Cancel()
+	return nil
 }
 
 func (w *workerStore) Remove(workerId int) error {

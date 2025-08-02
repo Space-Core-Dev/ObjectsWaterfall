@@ -38,12 +38,12 @@ const InsertWorkerSettings = `INSERT INTO Worker_Settings (
 	) 
 	VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-const GetWorkerSettings = `SELECT (Worker_Name,
+const GetWorkerSettings = `SELECT Worker_Name,
 		Timer, 
 		Request_Delay, 
 		Random, 
 		Writes_Number_To_Send, 
 		Total_To_Send, 
-		Stop_When_Table_Ends) 
+		Stop_When_Table_Ends 
 	FROM Worker_Settings 
 	WHERE Worker_Name = ?`
