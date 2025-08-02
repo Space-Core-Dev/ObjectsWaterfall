@@ -43,6 +43,7 @@ func Start(ctx *gin.Context) {
 	store := stores.GetWorkerStore()
 	if store.Exists(name) {
 		ctx.JSON(http.StatusConflict, gin.H{"Error": fmt.Sprintf("The worker %s is running alredy", name)})
+		return
 	}
 
 	var consumerSettings models.ConsumerSettings
@@ -60,6 +61,15 @@ func Start(ctx *gin.Context) {
 	workerSettings, err := repo.GetWorkerSettings(name)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	count, err := repo.Count(name)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if count == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("ther is no dummy data for %s", name)})
 		return
 	}
 	workerSettings.ConsumerSettings = consumerSettings
