@@ -1,41 +1,21 @@
 <div class="control-panel row">
-    <form (ngSubmit)="onAdd()">
-        <h2>New Worker</h2>
+    <form (ngSubmit)="onStart()">
+        <h2>Start Worker</h2>
         @if(!isMinimized()){
             <div class="section">
             <div class="input-group">
-                <label for="name">Name</label>
-                <input type="text" id="name" name="worker-name" placeholder="Enter worker name" [(ngModel)]="newSettings().workerName">
-                <label for="request-delay">Timer (seconds)</label>
-                <input type="number" id="timer" name="timer" placeholder="Enter delay in seconds" [(ngModel)]="newSettings().timer">
-                <label for="request-delay">Request delay (seconds)</label>
-                <input type="number" id="request-delay" name="request-delay" placeholder="Enter delay in seconds" [(ngModel)]="newSettings().requestDelay">
-                <label for="total">How Many For Request</label>
-                <input type="number" id="how-many-for-request" name="how-many-for-request" placeholder="Enter total number" [(ngModel)]="newSettings().writesNumberToSend">
-                <label for="total">Total</label>
-                <input type="number" id="total" name="total" placeholder="Enter total number" [(ngModel)]="newSettings().totalToSend">
-                <div class="checkbox-group">
-                <input type="checkbox" id="is-random" 
-                    [checked]="newSettings().random" 
-                    (change)="updateRandom($event)">
-                <label for="is-random">Is random data</label>
-                
-                <input type="checkbox" id="stop-on-data-ends" 
-                    [checked]="newSettings().StopWhenTableEnds" 
-                    (change)="updateEndData($event)">
-                <label for="stop-on-data-ends">Stop on data ends</label>
-            </div>
+                <label for="worker-name">Worker Name</label>
+                <input type="text" id="worker-name" name="worker-name" placeholder="Enter Worker Name for Start">
+                <label for="user-name">User</label>
+                <input type="text" id="user-name" name="user-name" placeholder="Enter User Name (if requared)">
+                <label for="password">Password</label>
+                <input type="text" id="password" name="password" placeholder="Enter Password (if requered)">
             </div>
         </div>
         
-        <button type="submit" [disabled]="isLoading()">
-            {{ isLoading() ? 'Saving...' : 'Add Worker' }}
+        <button type="submit">
+            Start worker
         </button>
-        @if (errorMessage()) {
-            <div class="error-message">
-                {{ errorMessage() }}
-            </div>
-        }
     }
     </form>
     <div (click)="resize()">

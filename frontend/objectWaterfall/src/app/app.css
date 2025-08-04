@@ -1,0 +1,32 @@
+main {
+  padding: 1%;
+  height: 90vh;
+  display: flex;
+  justify-content: center;
+  gap: 5vh;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-content: start;
+  gap: 10px;
+}
+
+.viewport {
+  width: 60%;
+  height: 100%;
+}
+
+.start-menu {
+  height: 30%;
+}
+
+.logs {
+  height: 65%;
+}
+
+.text {
+  color: whitesmoke;
+}

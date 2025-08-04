@@ -1,8 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { inject } from '@angular/core';
 
 class Settings {
   workerName = ""
@@ -24,6 +23,7 @@ export class WorkerSettings {
   newSettings = signal<Settings>(new Settings())
   errorMessage = signal<string | null>(null)
   isLoading = signal<boolean>(false)
+  isMinimized = signal(true)
   private http = inject(HttpClient);
 
   onAdd(){
@@ -56,9 +56,13 @@ export class WorkerSettings {
         this.isLoading.set(false)
       },
       error: err => {
-        this.errorMessage.set(err)
+        this.errorMessage.set(err.error.error)
         this.isLoading.set(false)
       }
     });
+  }
+
+  resize() {
+    this.isMinimized.set(!this.isMinimized())
   }
 }
