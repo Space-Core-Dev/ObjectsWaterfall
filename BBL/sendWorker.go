@@ -79,7 +79,7 @@ func (w *SendWorker) work(counter *int64) {
 	w.group.Add(1)
 	sw := stopwatch.NewStopWatch()
 	sw.Start()
-	w.actualWork()
+	go w.actualWork()
 	*counter += 1
 	requstDuration := sw.Elapsed(time.Second)
 	log.Printf("Request %d of %s takes %.2f seconds || Total amount of records have been sent %d of %d", *counter, w.settings.WorkerName, requstDuration, w.totalSended, w.settings.TotalToSend)

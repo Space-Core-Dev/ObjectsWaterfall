@@ -47,15 +47,16 @@
             background: #1d1d1d;
             color: whitesmoke
         }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-        }
-        
-        .checkbox-group input {
-            margin-right: 8px;
+
+        textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            max-width: 100%;
+            background: #1d1d1d;
+            color: whitesmoke;
         }
         
         button {
@@ -68,7 +69,7 @@
             font-weight: bold;
         }
         
-         button:hover {
+        button:hover {
             background-color: #32448b;
         }
         
@@ -81,4 +82,8 @@
         .row {
             display: flex;
             justify-content: space-between;
+        }
+
+        .json-data {
+            height: 40vh;
         }
