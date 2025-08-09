@@ -1,0 +1,6 @@
+<div class="worker-list">
+    <label>Workers</label>
+    @for (worker of workers(); track worker) {
+        <app-workers-item [worker]="worker"></app-workers-item>
+    }
+</div>

@@ -6,17 +6,17 @@
           <div class="input-group">
             <label for="name">Name</label>
             <input type="text" id="name" name="worker-name" 
-                  [(ngModel)]="seedingData().workerName"
+                  [(ngModel)]="data().workerName"
                   placeholder="Choose worker">
                   
             <label for="json-data">Json data</label>
             <textarea class="json-data" id="json-data" name="json-data"
-                      [(ngModel)]="seedingData().jStr"
+                      [(ngModel)]="data().jStr"
                       placeholder='{"example":"data"}'></textarea>
                       
             <label for="how-many">How many</label>
             <input type="number" id="how-many" name="count"
-                  [(ngModel)]="seedingData().count">
+                  [(ngModel)]="data().count">
           </div>
         </div>
         

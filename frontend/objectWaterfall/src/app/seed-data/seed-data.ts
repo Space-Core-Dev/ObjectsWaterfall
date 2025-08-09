@@ -1,24 +1,26 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { SeedingData } from '../models/data/seeding-data';
+import { WorkerItemModel } from '../models/worker/worker-item';
 
-class Data {
-  workerName = ""
-  jStr = ""
-  count = 1000
-}
+
 
 @Component({
   selector: 'app-seed-data',
   imports: [FormsModule],
   templateUrl: './seed-data.html',
-  styleUrl: './seed-data.css'
+  styleUrls: [
+    './seed-data.css',
+    '../../assets/styles/settings-controls.css'
+  ]
 })
 export class SeedData {
-  seedingData = signal<Data>(new Data())
+  data = signal<SeedingData>(new SeedingData())
   errorMessage = signal<string | null>(null)
   isLoading = signal<boolean>(false)
   isMinimized = signal(true)
+  workers = input<WorkerItemModel[]>()
   private http = inject(HttpClient);
 
   onSubmit() {
@@ -29,8 +31,8 @@ export class SeedData {
 
   private sendSettings() {
     const payload = {
-      ...this.seedingData(),
-      jStr: this.seedingData().jStr
+      ...this.data(),
+      jStr: this.data().jStr
     };
     this.http.post('http://localhost:8888/seed', payload).subscribe({
       next: response => {
