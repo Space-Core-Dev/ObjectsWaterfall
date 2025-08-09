@@ -1,11 +1,13 @@
 <main>
+  <div class="text">
+    <app-workers-list [workers]="workers()"></app-workers-list>
+  </div>
   <div class="col text">
     <app-worker-settings></app-worker-settings>
-    <app-seed-data></app-seed-data>
-    <app-start-worker></app-start-worker>
+    <app-seed-data [workers]="workers()"></app-seed-data>
+    <app-start-worker [workers]="workers()"></app-start-worker>
   </div>
   <div class="col viewport text">
-    
     <div class="logs">
       <app-worker-logs></app-worker-logs>
     </div>

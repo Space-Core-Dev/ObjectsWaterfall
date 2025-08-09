@@ -5,7 +5,13 @@
             <div class="section">
             <div class="input-group">
                 <label for="worker-name">Worker Name</label>
-                <input type="text" id="worker-name" name="worker-name" placeholder="Enter Worker Name for Start">
+                <select id="worker-name" name="worker-name" placeholder="Enter Worker Name for Start"
+                    (change)="onSelect($event)">
+                    <option [ngValue]="null" disabled selected>Select a Worker</option>
+                   @for (worker of workers(); track worker) {
+                    <option value="{{worker.name}}">{{worker.name}}</option>
+                   }
+                </select>
                 <label for="user-name">User</label>
                 <input type="text" id="user-name" name="user-name" placeholder="Enter User Name (if requared)">
                 <label for="password">Password</label>

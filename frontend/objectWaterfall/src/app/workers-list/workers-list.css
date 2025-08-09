@@ -1,0 +1,9 @@
+.worker-list {
+    width: 20vh;
+    padding: 1vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-content: start;
+    gap: 10px;
+}

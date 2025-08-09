@@ -2,25 +2,19 @@ import { Component, inject } from '@angular/core';
 import { signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-
-class Settings {
-  workerName = ""
-  timer = 30
-  requestDelay = 1
-  random = false
-  writesNumberToSend = 10
-  totalToSend = 1000
-  StopWhenTableEnds = false
-}
+import { WorkerSettingsModel } from '../models/worker/worker-settings';
 
 @Component({
   selector: 'app-worker-settings',
   imports: [FormsModule],
   templateUrl: './worker-settings.html',
-  styleUrl: './worker-settings.css'
+  styleUrls: [
+    './worker-settings.css',
+    '../../assets/styles/settings-controls.css'
+  ]
 })
 export class WorkerSettings {
-  newSettings = signal<Settings>(new Settings())
+  newSettings = signal<WorkerSettingsModel>(new WorkerSettingsModel())
   errorMessage = signal<string | null>(null)
   isLoading = signal<boolean>(false)
   isMinimized = signal(true)
