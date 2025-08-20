@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,13 +10,21 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	bbl "objectswaterfall.com/BBL"
 	"objectswaterfall.com/application/dtos"
+	"objectswaterfall.com/application/queries"
 	"objectswaterfall.com/core/mappers"
 	"objectswaterfall.com/core/models"
 	"objectswaterfall.com/data/repositories"
 	"objectswaterfall.com/stores"
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
+}
 
 func Add(ctx *gin.Context) {
 	var workerSettingsDto dtos.BackgroundWorkerSettingsDto
@@ -38,7 +47,24 @@ func Add(ctx *gin.Context) {
 }
 
 func Start(ctx *gin.Context) {
-	name := ctx.Query("name")
+	id, err := strconv.Atoi(ctx.Query("id"))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"Error": err.Error()})
+	}
+	if id == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": errors.New("id shouldn't be 0")})
+		return
+	}
+	repo, err := repositories.NewRepository[any]()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	name, err := repo.GetWorkerName(id)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	store := stores.GetWorkerStore()
 	if store.Exists(name) {
@@ -48,12 +74,6 @@ func Start(ctx *gin.Context) {
 
 	var consumerSettings models.ConsumerSettings
 	if err := ctx.ShouldBindBodyWithJSON(&consumerSettings); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	repo, err := repositories.NewRepository[any]()
-	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -78,7 +98,7 @@ func Start(ctx *gin.Context) {
 	context, cancel := context.WithDeadline(context.Background(), duration)
 	worker := bbl.NewSendWorker(*workerSettings)
 	worker.SetCancel(cancel)
-	workerId := store.Add(&worker)
+	workerId := store.Add(id, &worker)
 
 	go worker.DoWork(context)
 
@@ -149,11 +169,79 @@ func GetWorkers(ctx *gin.Context) {
 		return
 	}
 
-	tables, err := repo.GetAllWorkers()
+	workers, err := repo.GetAllWorkers()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"result": tables})
+	var workersDto []dtos.WorkerShortDto
+	for _, v := range *workers {
+		workersDto = append(workersDto, dtos.WorkerShortDto{
+			Id:   v.Id,
+			Name: v.Name,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"result": workersDto})
+}
+
+func GetRunningWorkers(ctx *gin.Context) {
+	store := stores.GetWorkerStore()
+	workers := store.All()
+	var workersDto []dtos.WorkerShortDto
+	for _, v := range *workers {
+		workersDto = append(workersDto, dtos.WorkerShortDto{
+			Id:   v.Id,
+			Name: v.Name,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"result": workersDto})
+}
+
+func WebSocketHandler(ctx *gin.Context) {
+	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer conn.Close()
+
+	for {
+		msgType, p, err := conn.ReadMessage()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		var wr queries.WorkerRequest
+		err = json.Unmarshal(p, &wr)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		store := stores.GetWorkerStore()
+		worker, err := store.Get(wr.WorkerId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		(*worker).SetLogFunc(func(l models.LogModel) {
+			data, _ := json.Marshal(l)
+			go func() {
+				err := conn.WriteMessage(msgType, data)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+			}()
+		})
+
+		err = conn.WriteMessage(msgType, p)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
 }

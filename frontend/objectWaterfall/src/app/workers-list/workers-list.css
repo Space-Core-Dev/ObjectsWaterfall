@@ -7,3 +7,11 @@
     align-content: start;
     gap: 10px;
 }
+
+.workers-panel {
+    background-color: #1d1d1d;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgb(95, 86, 86);
+    padding: 20px;
+    margin: 0 auto;
+}

@@ -23,7 +23,8 @@ const GetJson = `SELECT json_data FROM %s LIMIT ?, ?`
 const Count = `Select count () from %s`
 
 // const Tables = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
-const Workers = `SELECT Worker_Name FROM Worker_Settings`
+const Workers = `SELECT id, Worker_Name FROM Worker_Settings`
+const WorkerName = `SELECT Worker_Name FROM Worker_Settings WHERE id = ?`
 
 const Exists = `SELECT name FROM sqlite_master WHERE type='table' AND name=?`
 

@@ -2,6 +2,9 @@ import { Component, signal, inject, input, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WorkerItemModel } from '../models/worker/worker-item';
 import { FormsModule } from '@angular/forms';
+import { StartWorkerData } from '../models/worker/start-worker';
+import { environment } from '../environments/environments';
+import { response } from 'express';
 
 @Component({
   selector: 'app-start-worker',
@@ -13,19 +16,28 @@ import { FormsModule } from '@angular/forms';
   ]
 })
 export class StartWorker {
+  placeholdertext = '{\n "UserName": "Name", \n "UserPassword": "Password" \n}'
   errorMessage = signal<string | null>(null)
   isMinimized = signal(false)
+  startWorkerData = signal(new StartWorkerData())
   workers = input<WorkerItemModel[]>()
   private http = inject(HttpClient);
-  selected = signal(new WorkerItemModel(""))
+  selected = signal(0)
 
   onSelect(event: Event){
     const selectedWorker = (event.target as HTMLSelectElement).value;
-    this.selected.set(new WorkerItemModel(selectedWorker))
+    this.selected.set(Number(selectedWorker))
   }
 
   onStart(){
-
+        this.http.post(environment.baseAddress + 'start?id=' + this.selected(), this.startWorkerData()).subscribe({
+          next: response => {
+            console.log(response)
+          },
+          error: err => {
+            this.errorMessage.set(err.error.error)
+          }
+        });
   }
 
   resize() {

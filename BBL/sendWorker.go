@@ -15,7 +15,10 @@ import (
 	"objectswaterfall.com/utils/stopwatch"
 )
 
-// All logs will be moved to display presenter soon
+const totalMessage = "|| Total amount of records have been sent %d of %d"
+const successMessage = "Request %d of %s was success " + totalMessage
+const failedMessage = "Request %d of %s was failed " + totalMessage
+
 type SendWorker struct {
 	settings     models.BackgroundWorkerSettings
 	cancelFunc   context.CancelFunc
@@ -23,6 +26,9 @@ type SendWorker struct {
 	repo         repositories.Repository[string]
 	totalSended  int64
 	tokenService TokenService
+	medianValue  models.MedianValue
+	log          *models.LogModel
+	models.LogFunc
 }
 
 type dataResult struct {
@@ -45,6 +51,8 @@ func NewSendWorker(settings models.BackgroundWorkerSettings /*, cancel context.C
 		//cancelFunc:   cancel,
 		repo:         repo,
 		tokenService: TokenService{},
+		log:          &models.LogModel{},
+		medianValue:  models.NewMedianValue(),
 	}
 }
 
@@ -75,16 +83,28 @@ func (w *SendWorker) GetTableName() string {
 	return w.settings.WorkerName
 }
 
+func (w *SendWorker) Log() *models.LogModel {
+	return w.log
+}
+
+func (w *SendWorker) SetLogFunc(logFunc models.LogFunc) {
+	w.LogFunc = logFunc
+}
+
 func (w *SendWorker) work(counter *int64) {
 	w.group.Add(1)
-	sw := stopwatch.NewStopWatch()
-	sw.Start()
+
 	go w.actualWork()
 	*counter += 1
-	requstDuration := sw.Elapsed(time.Second)
-	log.Printf("Request %d of %s takes %.2f seconds || Total amount of records have been sent %d of %d", *counter, w.settings.WorkerName, requstDuration, w.totalSended, w.settings.TotalToSend)
+
 	if w.totalSended >= w.settings.TotalToSend {
+		w.group.Wait()
 		log.Printf("Worker is done. Sent %d of %d", w.totalSended, w.settings.TotalToSend)
+		w.log.Log = fmt.Sprintf("Worker is done. Sent %d of %d", w.totalSended, w.settings.TotalToSend)
+		w.log.MedianReuestDurationTime = w.medianValue.FindMedian()
+		if w.LogFunc != nil {
+			w.LogFunc(*w.log)
+		}
 		w.Cancel()
 		return
 	}
@@ -117,10 +137,17 @@ func (w *SendWorker) actualWork() {
 	}
 
 	respCh := make(chan requestResult)
+	sw := stopwatch.NewStopWatch()
+	sw.Start()
 	go w.sendRequest(dataResult, respCh)
-
 	respRes := <-respCh
+	requstDuration := sw.Elapsed(time.Second)
 	if respRes.err != nil {
+		w.medianValue.AddNum(requstDuration)
+		w.setLog(fmt.Sprintf(failedMessage+" error %s", w.log.SuccessAttemptsCount+w.log.FailedAttemptsCount, w.settings.WorkerName, w.totalSended, w.settings.TotalToSend, respRes.err), requstDuration, false)
+		if w.LogFunc != nil {
+			w.LogFunc(*w.log)
+		}
 		if _, ok := respRes.err.(errors.TokenRecievingError); ok {
 			log.Println(respRes.err)
 			w.Cancel()
@@ -129,8 +156,13 @@ func (w *SendWorker) actualWork() {
 		log.Println(respRes.err)
 		return
 	}
+	w.medianValue.AddNum(requstDuration)
+	w.setLog(fmt.Sprintf(successMessage, w.log.SuccessAttemptsCount+w.log.FailedAttemptsCount, w.settings.WorkerName, w.totalSended, w.settings.TotalToSend), requstDuration, true)
+	if w.LogFunc != nil {
+		w.LogFunc(*w.log)
+	}
 
-	log.Println(respRes)
+	log.Println(w.log)
 }
 
 func (w *SendWorker) getData(dataCh chan dataResult) {
@@ -182,4 +214,15 @@ func (w *SendWorker) sendRequest(data dataResult, respCh chan requestResult) {
 		err:        err,
 	}
 	w.totalSended += int64(len(data.data))
+}
+
+func (w *SendWorker) setLog(msg string, duration float64, isSuccess bool) {
+	w.log.Log = msg
+	w.log.RequestDirationTime = duration
+	w.log.MedianReuestDurationTime = w.medianValue.FindMedian()
+	if isSuccess {
+		w.log.SuccessAttemptsCount++
+	} else {
+		w.log.FailedAttemptsCount++
+	}
 }

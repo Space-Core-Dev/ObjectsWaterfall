@@ -15,6 +15,7 @@ type BackgroundWorkerSettings struct {
 	ConsumerSettings   ConsumerSettings `json:"consumerSettings"`
 }
 
+// TODO: make dto for this
 type ConsumerSettings struct {
 	Host      string `json:"host"`
 	AuthModel string `json:"authModel"`

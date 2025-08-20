@@ -20,6 +20,13 @@ func main() {
 		panic(err)
 	}
 	engine := gin.Default()
+	// mux := http.NewServeMux()
+	// logsHub := &hubs.LogsHub{}
+	// signalrServer, err := signalr.NewServer(context.Background(), signalr.SimpleHubFactory(logsHub))
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// signalrServer.MapHTTP(signalr.WithHTTPServeMux(mux), "/logsConnection")
 
 	engine.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -35,6 +42,9 @@ func main() {
 	engine.GET("/stop", handlers.Stop)
 	engine.POST("/seed", handlers.Seed)
 	engine.GET("/getWorkers", handlers.GetWorkers)
+	engine.GET("/getRunningWorkers", handlers.GetRunningWorkers)
+	engine.GET("/logsWs", handlers.WebSocketHandler)
+	//engine.Any("/logsConnection", gin.WrapH(mux))
 
 	engine.Run(":8888")
 }

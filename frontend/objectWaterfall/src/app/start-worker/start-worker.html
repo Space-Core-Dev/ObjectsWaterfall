@@ -9,13 +9,15 @@
                     (change)="onSelect($event)">
                     <option [ngValue]="null" disabled selected>Select a Worker</option>
                    @for (worker of workers(); track worker) {
-                    <option value="{{worker.name}}">{{worker.name}}</option>
+                    <option value="{{worker.id}}">{{worker.name}}</option>
                    }
                 </select>
-                <label for="user-name">User</label>
-                <input type="text" id="user-name" name="user-name" placeholder="Enter User Name (if requared)">
-                <label for="password">Password</label>
-                <input type="text" id="password" name="password" placeholder="Enter Password (if requered)">
+                <label for="target-url">Target URL</label>
+                <input type="text" id="target-url" name="target-url" placeholder="Enter target url (requered)" [(ngModel)]="startWorkerData().host" required>
+                <label for="json-data">Authentification object</label>
+                <textarea class="json-data" id="json-data" name="json-data"
+                      [(ngModel)]="startWorkerData().authModel"
+                      [placeholder]='placeholdertext'></textarea>
             </div>
         </div>
         

@@ -88,23 +88,23 @@ func (r mySqlRepositiry[T]) Count(workerName string) (int64, error) {
 	return count, nil
 }
 
-func (r mySqlRepositiry[T]) GetAllWorkers() ([]string, error) {
+func (r mySqlRepositiry[T]) GetAllWorkers() (*[]models.WorkerShort, error) {
 	rows, err := data.DbContext.Db.Query(data.Workers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var names []string
+	var workers []models.WorkerShort
 	for rows.Next() {
-		var name string
-		err := rows.Scan(&name)
+		var worker models.WorkerShort
+		err := rows.Scan(&worker.Id, &worker.Name)
 		if err != nil {
 			return nil, err
 		}
-		names = append(names, name)
+		workers = append(workers, worker)
 	}
 
-	return names, nil
+	return &workers, nil
 }
 
 func (r mySqlRepositiry[T]) AddSettings(settings models.BackgroundWorkerSettings) error {
@@ -171,6 +171,18 @@ func (r mySqlRepositiry[T]) GetWorkerSettings(settingsWorkerName string) (*model
 	}
 
 	return &settings, nil
+}
+
+func (r mySqlRepositiry[T]) GetWorkerName(id int) (string, error) {
+	row := data.DbContext.Db.QueryRow(data.WorkerName, id)
+
+	var name string
+	err := row.Scan(&name)
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
 }
 
 func (r mySqlRepositiry[T]) Exists(workerName string) (bool, error) {

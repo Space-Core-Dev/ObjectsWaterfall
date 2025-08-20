@@ -1,1 +1,9 @@
-<p>worker-logs works!</p>
+<div class="logs-panel">
+    @if (!isWorkerChoosen()){
+        <p>Choose a worker</p>
+    } @else {
+        @for (log of inputLogs(); track log) {
+        <app-worker-log-item [workerLog]="log"></app-worker-log-item>
+        }
+    }
+</div>

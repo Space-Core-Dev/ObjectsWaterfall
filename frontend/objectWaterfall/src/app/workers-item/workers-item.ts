@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { WorkerItemModel } from '../models/worker/worker-item';
 
 @Component({
@@ -12,9 +12,15 @@ import { WorkerItemModel } from '../models/worker/worker-item';
 })
 export class WorkersItem {
   worker = input.required<WorkerItemModel>()
-  selected = output<boolean>()
+  selectedItem = output<number>()
+  isMininimized = signal<boolean>(true)
+  isRunning = signal<boolean>(true)
 
-  onSelectedHandler(selected: boolean) {
-    this.selected.emit(selected)
+  onSelectedHandler() {
+    this.selectedItem.emit(this.worker().id)
+  }
+
+  onStop() {
+    this.isRunning.set(!this.isRunning())
   }
 }

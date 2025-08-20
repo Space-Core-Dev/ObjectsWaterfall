@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { SeedingData } from '../models/data/seeding-data';
 import { WorkerItemModel } from '../models/worker/worker-item';
+import { environment } from '../environments/environments';
 
 
 
@@ -34,7 +35,7 @@ export class SeedData {
       ...this.data(),
       jStr: this.data().jStr
     };
-    this.http.post('http://localhost:8888/seed', payload).subscribe({
+    this.http.post(environment.baseAddress + 'seed', payload).subscribe({
       next: response => {
         this.isLoading.set(false)
       },

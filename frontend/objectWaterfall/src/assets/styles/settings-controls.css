@@ -68,6 +68,13 @@ button:hover {
     color: #555;
 }
 
+.container {
+  display: flex;
+  justify-content: center;
+  gap: 3vh;
+  width: 80%;
+}
+
 .row {
     display: flex;
     justify-content: space-between;

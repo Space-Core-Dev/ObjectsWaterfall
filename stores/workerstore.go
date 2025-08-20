@@ -3,7 +3,9 @@ package stores
 import (
 	"errors"
 	"fmt"
+	"sort"
 
+	"objectswaterfall.com/core/models"
 	"objectswaterfall.com/core/services"
 )
 
@@ -23,11 +25,20 @@ func GetWorkerStore() services.WorkerStore {
 	return store
 }
 
-func (w *workerStore) Add(worker *services.Worker) int {
-	var last int
-	for k := range w.workers {
-		last = k
+func (w *workerStore) Add(id int, worker *services.Worker) int {
+	if id != 0 {
+		w.workers[id] = worker
+		return id
 	}
+
+	lenght := len(w.workers)
+	keys := make([]int, 0, lenght)
+	for k := range w.workers {
+		keys = append(keys, k)
+	}
+
+	sort.Ints(keys)
+	last := keys[lenght-1]
 	workerId := last + 1
 	w.workers[workerId] = worker
 
@@ -40,6 +51,17 @@ func (w *workerStore) Get(workerId int) (*services.Worker, error) {
 	}
 
 	return nil, errors.New("wrong worker identifire")
+}
+
+func (w *workerStore) All() *[]models.WorkerShort {
+	var runningWorkers []models.WorkerShort
+	for k, v := range w.workers {
+		runningWorkers = append(runningWorkers, models.WorkerShort{
+			Id:   k,
+			Name: (*v).GetTableName(),
+		})
+	}
+	return &runningWorkers
 }
 
 func (w *workerStore) Exists(name string) bool {

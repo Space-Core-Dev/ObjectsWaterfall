@@ -1,4 +1,4 @@
-.worker-item {
+/* .worker-item {
   background-color: #1d1d1d;
   border-radius: 3px;
   box-shadow: 0 2px 3px rgb(95, 86, 86);
@@ -11,4 +11,18 @@
   height: 100%;
   box-sizing: border-box;
   word-wrap: break-word;
+} */
+
+.item-panel {
+    padding: 2vh;
+    border-bottom: 1px solid whitesmoke;
+    border-radius: 3px;
+}
+
+span:hover {
+  cursor: pointer;
+}
+
+.gap {
+    gap: 5vh;
 }

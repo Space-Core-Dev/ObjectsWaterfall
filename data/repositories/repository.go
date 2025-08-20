@@ -19,9 +19,10 @@ type Repository[T any] interface {
 
 type SqLiteRepository[T any] interface {
 	Repository[T]
-	GetAllWorkers() ([]string, error)
+	GetAllWorkers() (*[]models.WorkerShort, error)
 	AddSettings(settings models.BackgroundWorkerSettings) error
 	GetWorkerSettings(settingsWorkerName string) (*models.BackgroundWorkerSettings, error)
+	GetWorkerName(id int) (string, error)
 }
 
 func NewRepository[T any]() (SqLiteRepository[T], error) {
